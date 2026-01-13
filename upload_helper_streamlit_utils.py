@@ -11,6 +11,7 @@ helper-streamlit-utils PyPI 업로드 스크립트
 import subprocess
 import sys
 import shutil
+import os
 from pathlib import Path
 
 
@@ -40,7 +41,7 @@ def build_package():
     return result
 
 
-def upload_package(test_mode=False):
+def upload_package(test_mode=False, verbose=False):
     """패키지 업로드"""
     repository = "testpypi" if test_mode else "pypi"
     repo_name = "TestPyPI" if test_mode else "PyPI"
@@ -50,9 +51,15 @@ def upload_package(test_mode=False):
     cmd = [sys.executable, "-m", "twine", "upload"]
     if test_mode:
         cmd.extend(["--repository", "testpypi"])
+    if verbose:
+        cmd.append("--verbose")
     cmd.append("dist/*")
 
-    result = subprocess.run(cmd)
+    # Windows에서 UTF-8 인코딩 강제
+    env = os.environ.copy()
+    env['PYTHONIOENCODING'] = 'utf-8'
+
+    result = subprocess.run(cmd, env=env)
 
     if result.returncode != 0:
         print(f"{repo_name} 업로드 실패")
@@ -64,6 +71,7 @@ def upload_package(test_mode=False):
 def main():
     """메인 실행 함수"""
     test_mode = "--test" in sys.argv
+    verbose = "--verbose" in sys.argv
 
     print("=" * 60)
     print("helper-streamlit-utils PyPI 업로드")
@@ -77,7 +85,7 @@ def main():
     build_package()
 
     # 3. 패키지 업로드
-    upload_package(test_mode)
+    upload_package(test_mode, verbose)
 
     # 4. 완료 메시지
     if test_mode:
